@@ -34,6 +34,7 @@ class ContactCell: UITableViewCell {
             //isFavoriteButton.imageView?.layer.cornerRadius =
             //isFavoriteButton.imageView?.layer.masksToBounds = true
             isFavoriteButton.imageView?.contentMode = .scaleAspectFit
+            isFavoriteButton.isUserInteractionEnabled = false
         }
     }
     
@@ -97,10 +98,10 @@ class ContactCell: UITableViewCell {
         super.layoutSubviews()
         
     }
-    @IBAction func isFavoriteButtonTapped(_ sender: Any){
-        isFavorite = !isFavorite!
-        isFavorite! ? isFavoriteButton.setImage(UIImage(named: "star_active.png"), for: .normal) : isFavoriteButton.setImage(UIImage(named: "star_inactive.png"), for: .normal)
-    }
+//    @IBAction func isFavoriteButtonTapped(_ sender: Any){
+//        isFavorite = !isFavorite!
+//        isFavorite! ? isFavoriteButton.setImage(UIImage(named: "star_active.png"), for: .normal) : isFavoriteButton.setImage(UIImage(named: "star_inactive.png"), for: .normal)
+//    }
     
     override func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)

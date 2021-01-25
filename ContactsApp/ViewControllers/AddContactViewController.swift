@@ -791,7 +791,7 @@ class AddContactViewController: UIViewController, UITextFieldDelegate, UITextVie
             // if the image does not fit the cropped area, it will still appear circular in the profile image view
             profileImageView.backgroundColor = Constants.IMAGE_BACKGROUND_COLOR
             if isEditView {
-                self.navigationItem.rightBarButtonItem?.isEnabled = (profileImageView.image != self.contact.contactPhoto )
+                enableSaveButton(under: (profileImageView.image != self.contact.contactPhoto ))
             }
             dismiss(animated: true, completion: nil)
         }

@@ -10,74 +10,79 @@ import UIKit
 import os.log
 
 class TableViewController: UITableViewController, DataReceivable{
-    /// If selfExists gets passed, use it — Allows ContactViewController can tell TableViewController if self no longer exists
-    func passBool(selfExists: Bool) {
-        self.selfExists = selfExists
-    }
     
-    /// If contentWasEdited gets passed, use it — Allows ContactViewController can tell TableViewController if cells need to be shifted/edited
-    func passBool(contactWasEdited: Bool) {
-        self.contactWasEdited = contactWasEdited
-    }
-    
-    func saveAllContacts() {
-        saveContacts()
-    }
+    // MARK: Instance Variables
     var contacts = [Contact]()
     
     /// Indicates whether the self (Relationship) exists in the table view or not
     var selfExists : Bool? = nil
     
+    /// Indicates which contact was selected, so that when contact is received, the appropriate cell can be reconfigured
     var rowSelected : IndexPath?
     
-    var contactWasEdited: Bool? = nil
-
+    /// Indicates whether a contact has been visibly edited by the user — basically, does a cell have to be reconfigured based on user edits
+    var wasContactVisiblyEdited: Bool? = nil
+    
+    
+    // MARK: TableView Methods
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+        // Load saved contacts if possible
         if let contacts = loadContacts() {
             self.contacts = contacts
         } else {
             self.contacts = loadSampleContacts()
         }
-        
-        // when tableView is originally loaded selfExsits
+        // determine whether the self relationship type exists
         assignSelfExists()
     }
-    private func loadSampleContacts() -> [Contact] {
-        // set up dummy contacts
-        let a = Contact()
-        let formatter = DateFormatter()
-        formatter.dateStyle = Constants.DATE_STYLE
-        a.firstName = "The"
-        a.lastName = "Weeknd"
-        a.relationship = Relationship.acquaintance.rawValue
-        a.contactPhoto = UIImage(named: Constants.DEFAULT_IMAGE_NAME)
-        a.primaryPhone = "686-96"
-        a.isFavorite = true
-        a.birthday = formatter.date(from: "February 16, 1990")
-        a.notes = "XO"
-
-        return [a, Contact(firstName: "Drizzy", lastName: "Drake", primaryPhone: "686-96", secondaryPhone: nil, email: "drizzydrake@gmail.com", birthday: formatter.date(from: "October 24, 1986"), isFavorite: false, relationship: Relationship.other.rawValue, notes: nil, contactPhoto: UIImage(named: Constants.DEFAULT_IMAGE_NAME))]
-    }
-    private func assignSelfExists() {
-        for contact in self.contacts {
-            if contact.relationship == Relationship.myself.rawValue {
-                self.selfExists = true
-                return
-            }
-        }
-        self.selfExists = false
+    
+    
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { return contacts.count }
+    
+    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        let deleteAction = contextualDeleteAction(indexPath)
+        return UISwipeActionsConfiguration(actions: [deleteAction])
     }
     
-//    /// When the view will disappear, save the contacts
-//    override func viewWillDisappear(_ animated: Bool) {
-//        saveContacts()
-//    }
-//
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "contactCell") as! ContactCell
+        let contact = contacts[indexPath.row]
+        // config cell
+        configureCell(contact: contact, cell: cell)
+        return cell
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "toAddContact"{
+            let seg = segue.destination as! AddContactViewController
+            seg.delegate = self
+            // view must have been loaded (selfExists is set in viewDidLoad) so selfExists exists, it's okay to forcefully unwrap
+            if selfExists! {
+                // remove self as an option from picker, after it originally exists, there can only be one self
+                seg.relationshipPickerData = Array(Relationship.allCases[1...])
+            }
+            seg.configureGeneralTargets() // %%%%
+        }
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let contactView = ContactViewController()
+        print(self.contacts[indexPath.row].dump())
+        // ensure that the contactViewController can send the tableViewController data
+        contactView.delegate = self
+        // pass the current contact to the contactViewController and whether or not self exists
+        contactView.contact = self.contacts[indexPath.row]
+        contactView.selfExists = self.selfExists
+        contactView.contactWasSelf = (self.contacts[indexPath.row].relationship == Relationship.myself.rawValue)
+        self.rowSelected = indexPath
+        self.show(contactView, sender: self)
+    }
+    
+    // MARK: DataReceivable Methods
     /// If the contact that is being set is self, pin it to the top of the tableView, else, add it to the end. Also reflect any changes made to contact objects that already existed within the table view
     func passData(dataType data: Contact){
-        if (contactWasEdited != nil) && contactWasEdited! {
+        if (wasContactVisiblyEdited != nil) && wasContactVisiblyEdited! {
             var indexPath = NSIndexPath(row: self.contacts.count, section: 0) as IndexPath
             // if the contact is self, pin it to the top of the tableview
             if data.relationship == Relationship.myself.rawValue {
@@ -97,7 +102,7 @@ class TableViewController: UITableViewController, DataReceivable{
                 } else {
                     // make sure to modify existing cell if necessary
                     // reconfigure cell — rowSelected must have been set if the contactViewController is called, so it is safe to forcefully unwrap
-                   
+                    
                     configureCell(contact: data, cell: self.tableView.cellForRow(at: rowSelected!) as! ContactCell)  // OR tableView.reloadRows(at: [rowSelected!], with: .none)
                     // contacts are saved in the Edit view controller if an edit occurs
                     // reset contactWasEdited
@@ -106,26 +111,87 @@ class TableViewController: UITableViewController, DataReceivable{
                 }
             }
             self.tableView.insertRows(at: [indexPath], with: .fade)
-    
+            
             // reset contactWasEdited
             //self.contactWasEdited = nil
         }
         
     }
+    /// If selfExists gets passed, use it — Allows ContactViewController can tell TableViewController if self no longer exists
+    func passBool(selfExists: Bool) { self.selfExists = selfExists }
     
-//    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-//        print("debug_message here")
-//    }
-//
-    override func numberOfSections(in tableView: UITableView) -> Int { return 1 }
+    /// If contentWasEdited gets passed, use it — Allows ContactViewController can tell TableViewController if cells need to be shifted/edited
+    func passBool(wasContactVisiblyEdited: Bool) { self.wasContactVisiblyEdited = wasContactVisiblyEdited }
     
-     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return contacts.count
+    func saveAllContacts() { saveContacts() }
+    
+    // MARK: Private Methods
+    private func loadSampleContacts() -> [Contact] {
+        // set up dummy contacts
+        let a = Contact()
+        let formatter = DateFormatter()
+        formatter.dateStyle = Constants.DATE_STYLE
+        a.firstName = "The"
+        a.lastName = "Weeknd"
+        a.relationship = Relationship.acquaintance.rawValue
+        a.contactPhoto = UIImage(named: Constants.DEFAULT_IMAGE_NAME)
+        a.primaryPhone = "686-96"
+        a.isFavorite = true
+        a.birthday = formatter.date(from: "February 16, 1990")
+        a.notes = "XO"
+        return [a, Contact(firstName: "Drizzy", lastName: "Drake", primaryPhone: "686-96", secondaryPhone: nil, email: "drizzydrake@gmail.com", birthday: formatter.date(from: "October 24, 1986"), isFavorite: false, relationship: Relationship.other.rawValue, notes: nil, contactPhoto: UIImage(named: Constants.DEFAULT_IMAGE_NAME))!]
     }
     
-    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-        let deleteAction = contextualDeleteAction(indexPath)
-        return UISwipeActionsConfiguration(actions: [deleteAction])
+    private func assignSelfExists() {
+        for contact in self.contacts {
+            if contact.relationship == Relationship.myself.rawValue {
+                self.selfExists = true
+                return
+            }
+        }
+        self.selfExists = false
+    }
+    
+    /// This method loads contacts that have been saved to the device and returns an array of Contact objects
+    private func loadContacts() -> [Contact]? {
+        // path to load contacts from
+        let path = Contact.ArchiveURL
+        // load data from NSData
+        if let ns_data = NSData(contentsOf: path) {
+            //
+            do {
+                let data = Data(referencing: ns_data)
+                if let loadedContacts = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? [Contact] {
+                    // log success
+                    os_log("Contacts successfully loaded.", log: .default, type: .debug)
+                    return loadedContacts
+                }
+            } catch {
+                // log inability to read file
+                os_log("(Couldn't read file) Contacts could not be loaded.", log: .default, type: .debug)
+                return nil
+            }
+        }
+        // log
+        os_log("No contacts to load.", log: .default, type: .debug)
+        return nil
+    }
+    
+    // MARK: General Methods
+    /// This method saves Contact objects to the device
+    func saveContacts() {
+        // path to save contacts to
+        let path = Contact.ArchiveURL
+        do {
+            // archive contacts
+            let data = try NSKeyedArchiver.archivedData(withRootObject: self.contacts, requiringSecureCoding: false)
+            // write data to the path
+            try data.write(to: path)
+            // log success
+            os_log("Contacts successfully saved.", log: .default, type: .debug)
+        } catch {
+            os_log("Failed to save contacts.", log: .default, type: .debug)
+        }
     }
     
     /// This function defines the contextual action of deleting a contact (by swiping on a given cell)
@@ -160,19 +226,11 @@ class TableViewController: UITableViewController, DataReceivable{
             alert.addAction(cancel)
             alert.addAction(delete)
             self.present(alert, animated: true)
-          
+            
             completionHandler(true)
         }
         action.image = UIImage(systemName: "trash")
         return action
-    }
-    
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "contactCell") as! ContactCell
-        let contact = contacts[indexPath.row]
-        // config cell
-        configureCell(contact: contact, cell: cell)
-        return cell
     }
     
     func configureCell(contact: Contact, cell: ContactCell) {
@@ -185,12 +243,12 @@ class TableViewController: UITableViewController, DataReceivable{
             if let lastName = contact.lastName {
                 cell.nameLabel.text! += " " + lastName
             }
-        // if the first name doesn't exist, just display last name
+            // if the first name doesn't exist, just display last name
         } else {
             // last name can be forcefully unwrapped since either the first name or last name must be set
             cell.nameLabel.text = SPACE + contact.lastName!
         }
-
+        
         cell.isFavorite = contact.isFavorite
         cell.relationshipLabel.text = SPACE
         // set the relationshipLabel text by exhausting all different relationships
@@ -238,7 +296,7 @@ class TableViewController: UITableViewController, DataReceivable{
             print("Unrecognized relationship label present")
             break
         }
-
+        
         if let image = contact.contactPhoto {
             cell.profileImageView.image = image
         }
@@ -246,76 +304,13 @@ class TableViewController: UITableViewController, DataReceivable{
         contact.isFavorite ? cell.isFavoriteButton.setImage(UIImage(named: "star_active.png"), for: .normal) : cell.isFavoriteButton.setImage(UIImage(named: "star_inactive.png"), for: .normal)
         
     }
+    
+    
+    // MARK: IBAction Methods
     /// When the 'add' button is pressed, trigger code in `prepare(for segue: UIStoryboardSegue, sender: Any?)` and then segue
     @IBAction func addWasPressed(_ sender: Any) {
         self.performSegue(withIdentifier: "toAddContact", sender: nil)
     }
-    
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let contactView = ContactViewController()
-        print(self.contacts[indexPath.row].dump())
-        // ensure that the contactViewController can send the tableViewController data
-        contactView.delegate = self
-        // pass the current contact to the contactViewController and whether or not self exists
-        contactView.contact = self.contacts[indexPath.row]
-        contactView.selfExists = self.selfExists
-        contactView.contactWasSelf = (self.contacts[indexPath.row].relationship == Relationship.myself.rawValue)
-        self.rowSelected = indexPath
-        self.show(contactView, sender: self)
-    }
-    
-    func saveContacts() {
-        // path to save contacts to
-        let path = Contact.ArchiveURL
-        do {
-            // archive contacts
-            let data = try NSKeyedArchiver.archivedData(withRootObject: self.contacts, requiringSecureCoding: false)
-            // write data to the path
-            try data.write(to: path)
-            // log success
-            os_log("Contacts successfully saved.", log: .default, type: .debug)
-        } catch {
-            os_log("Failed to save contacts.", log: .default, type: .debug)
-        }
-    }
-
-    private func loadContacts() -> [Contact]? {
-        // path to load contacts from
-        let path = Contact.ArchiveURL
-        // load data from NSData
-        if let ns_data = NSData(contentsOf: path) {
-            //
-            do {
-                let data = Data(referencing: ns_data)
-                if let loadedContacts = try NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? [Contact] {
-                    // log success
-                    os_log("Contacts successfully loaded.", log: .default, type: .debug)
-                    return loadedContacts
-                }
-            } catch {
-                // log inability to read file
-                os_log("(Couldn't read file) Contacts could not be loaded.", log: .default, type: .debug)
-                return nil
-            }
-        }
-        // log
-        os_log("No contacts to load.", log: .default, type: .debug)
-        return nil
-    }
-    
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "toAddContact"{
-            let seg = segue.destination as! AddContactViewController
-            seg.delegate = self
-            // view must have been loaded (selfExists is set in viewDidLoad) so selfExists exists, it's okay to forcefully unwrap
-            if selfExists! {
-                // remove self as an option from picker, after it originally exists, there can only be one self
-                seg.relationshipPickerData = Array(Relationship.allCases[1...])
-            }
-            seg.configureGeneralTargets() // %%%%
-        }
-    }
-
     
 }
 

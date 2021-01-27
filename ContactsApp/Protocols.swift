@@ -12,13 +12,8 @@ import UIKit
 protocol DataReceivable {
     func passData(dataType data: Contact)
     func passBool(selfExists: Bool)
-    func passBool(contactWasEdited: Bool)
+    func passBool(wasContactVisiblyEdited: Bool)
     func saveAllContacts()
-}
-extension DataReceivable {
-    func passBool(selfExists: Bool) { }
-    func passBool(contactWasEdited: Bool) { }
-    func saveAllContacts() { }
 }
 
 protocol UserEditable {

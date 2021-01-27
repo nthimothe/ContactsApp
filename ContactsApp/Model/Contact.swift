@@ -71,7 +71,11 @@ class Contact : NSObject, NSCoding{
         self.contactPhoto = UIImage(named: Constants.DEFAULT_IMAGE_NAME)
     }
     
-    init(firstName: String?, lastName: String?, primaryPhone: String?, secondaryPhone: String?, email: String?, birthday: Date?, isFavorite: Bool, relationship: String, notes: String?, contactPhoto: UIImage?) {
+    init?(firstName: String?, lastName: String?, primaryPhone: String?, secondaryPhone: String?, email: String?, birthday: Date?, isFavorite: Bool, relationship: String, notes: String?, contactPhoto: UIImage?) {
+        if (firstName == nil && lastName == nil) || (firstName!.isEmpty && lastName!.isEmpty){
+            print("Contact must contain either a first or a last name")
+            return nil
+        }
         self.firstName = firstName
         self.lastName = lastName
         // no checks in init to make sure phone numbers are not over 12 chars

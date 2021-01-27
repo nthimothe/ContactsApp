@@ -9,6 +9,17 @@
 import Foundation
 import UIKit
 
+extension DataReceivable {
+    func passBool(selfExists: Bool) { }
+    func passBool(wasContactVisiblyEdited: Bool) { }
+    func saveAllContacts() { }
+}
+
+extension String {
+    func trim() -> String {
+        return self.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
 extension UIColor{
     static var veryLightGray : UIColor {
         return UIColor(displayP3Red: 0.9, green: 0.9, blue: 0.9, alpha: 1.0)

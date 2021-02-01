@@ -260,13 +260,9 @@ class AddContactViewController: UIViewController, UITextFieldDelegate, UITextVie
         // ask the user if they want to save/delete the contact — in the case that the user swipes down on the view without saving first
         if !saveButtonTapped && self.saveButton.isEnabled {
             let alert = UIAlertController(title: "Would you like to save or delete this contact?", message: "", preferredStyle: .actionSheet)
-            // if user selects, save, allow the delegate to pass data, else do othing
+            // if user selects save, trigger same code as if saveButton (UI element) was presse
             let save = UIAlertAction(title: "Save", style: .default) { (action) in
-                self.setContactObject()
-                // delegate must be set by TableViewController so we can forcefully unwrap
-                self.delegate!.passData(dataType: self.contact)
-                self.dismiss(animated: true, completion: nil)
-                self.delegate?.saveAllContacts()
+                self.saveButtonWasPressed()
             }
             let delete = UIAlertAction(title: "Delete", style: .cancel) { (action)  in
                 self.dismiss(animated: true, completion: nil)
@@ -591,6 +587,7 @@ class AddContactViewController: UIViewController, UITextFieldDelegate, UITextVie
         birthdayField.delegate = self
         notesField.delegate = self
     }
+    
     
     // MARK: @objc Methods
     @objc func saveButtonWasPressed() {

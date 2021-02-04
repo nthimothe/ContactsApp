@@ -588,6 +588,18 @@ class AddContactViewController: UIViewController, UITextFieldDelegate, UITextVie
         notesField.delegate = self
     }
     
+    /**
+     This function enables or disables a save button (the one that is currently visible) based on the given boolean parameter, `condition`. A save button can only be enabled if a change is made to a field.
+     - Parameters:
+        - condition : boolean condition that either disables or enables a save button
+        - isVisibleCellEdit : boolean that indicates whether this edit will make a visible difference in the TableViewController
+     */
+    func enableSaveButton(under condition: Bool, isVisibleCellEdit: Bool) {
+        self.navigationItem.rightBarButtonItem?.isEnabled = condition
+        self.saveButton.isEnabled = condition
+        self.wasContactVisiblyEdited = isVisibleCellEdit
+    }
+    
     
     // MARK: @objc Methods
     @objc func saveButtonWasPressed() {
@@ -779,9 +791,8 @@ class AddContactViewController: UIViewController, UITextFieldDelegate, UITextVie
             enableSaveButton(under: sender.text !=  text, isVisibleCellEdit: false)
         }
     }
-    
- 
-    
+
+    // MARK: Image Picker Methods
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         if let image = info[UIImagePickerController.InfoKey(rawValue: "UIImagePickerControllerEditedImage")] as? UIImage {
             profileImageView.image = image
@@ -794,24 +805,9 @@ class AddContactViewController: UIViewController, UITextFieldDelegate, UITextVie
         }
     }
     
-   
-    /**
-     This function enables or disables a save button (the one that is currently visible) based on the given boolean parameter, `condition`
-     - Parameters:
-        - condition : boolean condition that either disables or enables a save button
-        - isVisibleCellEdit : boolean that indicates whether this edit will make a visible difference in the TableViewController
-     */
-    func enableSaveButton(under condition: Bool, isVisibleCellEdit: Bool) {
-        self.navigationItem.rightBarButtonItem?.isEnabled = condition
-        self.saveButton.isEnabled = condition
-        self.wasContactVisiblyEdited = isVisibleCellEdit
-    }
-    
-    // MARK: Image Picker Methods
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         dismiss(animated: true, completion: nil)
     }
-    
     
     func numberOfComponents(in pickerView: UIPickerView) -> Int {
         return 1
@@ -820,20 +816,20 @@ class AddContactViewController: UIViewController, UITextFieldDelegate, UITextVie
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
         return relationshipPickerData.count
     }
-    
-    // the name of each option is the raw value of each case in enum
+
     func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        // the name of each option is the raw value of each case in enum
         return relationshipPickerData[row].rawValue
     }
     
-    // once a row is selected, set the relationship field's text
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        // once a row is selected, set the relationship field's text
         relationshipField.text = relationshipPickerData[row].rawValue
     }
     
     // MARK: TextField Methods
     
-    // Upon hitting return, textField shoud resign and go to next field
+    /// Upon hitting return, textField shoud resign and go to next field
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         // define fields
         let fields = [firstNameField, lastNameField, primaryPhoneField, secondaryPhoneField, emailField, relationshipField, birthdayField, notesField]

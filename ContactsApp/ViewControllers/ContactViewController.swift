@@ -255,9 +255,9 @@ class ContactViewController: UIViewController, UINavigationControllerDelegate, U
         scrollingView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
         
         self.scrollingView.addSubview(inputsContainerView)
-        inputsContainerView.leadingAnchor.constraint(equalTo: self.scrollingView.leadingAnchor).isActive = true // #
-        inputsContainerView.topAnchor.constraint(equalTo: self.scrollingView.topAnchor, constant: 15).isActive = true // $$
-        inputsContainerView.widthAnchor.constraint(equalTo: self.scrollingView.widthAnchor).isActive = true // #
+        inputsContainerView.leadingAnchor.constraint(equalTo: self.scrollingView.leadingAnchor).isActive = true
+        inputsContainerView.topAnchor.constraint(equalTo: self.scrollingView.topAnchor, constant: 15).isActive = true
+        inputsContainerView.widthAnchor.constraint(equalTo: self.scrollingView.widthAnchor).isActive = true 
         inputsContainerView.heightAnchor.constraint(equalToConstant: height).isActive = true
         
         let views : [UIView] = [profileImageView, firstNameField, firstLastSeparator, lastNameField, lastNamePrimaryPhoneSeparator, primaryPhoneField, primarySecondarySeparator, secondaryPhoneField, secondaryPhoneField, secondaryPhoneEmailSeparator, emailField,emailRelationshipSeparator, relationshipField, relationshipBirthdaySeparator, birthdayField, birthdayNotesSeparator, notesField, isFavoriteButton]
